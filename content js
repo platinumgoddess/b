@@ -1,0 +1,82 @@
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.action === "getProductInfo") {
+    const title = document.querySelector('[data-testid="product-name"]')?.innerText || "Name not found";
+    const brand = document.querySelector('[data-testid="product-brand"]')?.innerText || "Brand not found";
+    const price = document.querySelector('[data-testid="product-price"]')?.innerText || "Price not found";
+
+    // Helper: check if element is inside banner/ad containers
+    function isInBanner(img) {
+      return img.closest('.banner, .hero, .advertisement, .promo, .carousel, .contenthub, .ad-container');
+    }
+
+    // Find images large enough, visible, and NOT inside banner/ad containers
+    const candidates = Array.from(document.querySelectorAll('img')).filter(img => {
+      const rect = img.getBoundingClientRect();
+      return (
+        rect.width > 300 && rect.height > 300 && // big images only
+        img.complete && img.naturalWidth > 300 && img.naturalHeight > 300 && // loaded and large
+        !isInBanner(img) && // exclude banners/ads
+        window.getComputedStyle(img).display !== 'none' && // visible
+        window.getComputedStyle(img).visibility !== 'hidden' &&
+        img.alt && img.alt.trim() !== '' // has alt text (likely product)
+      );
+    });
+
+    // Prefer images near product name or brand (within same container or close in DOM)
+    let productImg = null;
+    const productNameEl = document.querySelector('[data-testid="product-name"]');
+    if (productNameEl) {
+      for (const img of candidates) {
+        if (productNameEl.contains(img) || img.closest('[data-testid="product-info"], [data-testid="product-details"]')) {
+          productImg = img.src;
+          break;
+        }
+      }
+    }
+
+    // If still none, fallback to first candidate
+    if (!productImg && candidates.length > 0) {
+      productImg = candidates[0].src;
+    }
+
+    sendResponse({ title, brand, price, image: productImg, url: window.location.href });
+    return true;
+  }
+
+  if (msg.type === "GET_IMAGE") {
+    // Use the same logic as above for GET_IMAGE request
+    function isInBanner(img) {
+      return img.closest('.banner, .hero, .advertisement, .promo, .carousel, .contenthub, .ad-container');
+    }
+
+    const candidates = Array.from(document.querySelectorAll('img')).filter(img => {
+      const rect = img.getBoundingClientRect();
+      return (
+        rect.width > 300 && rect.height > 300 &&
+        img.complete && img.naturalWidth > 300 && img.naturalHeight > 300 &&
+        !isInBanner(img) &&
+        window.getComputedStyle(img).display !== 'none' &&
+        window.getComputedStyle(img).visibility !== 'hidden' &&
+        img.alt && img.alt.trim() !== ''
+      );
+    });
+
+    let productImg = null;
+    const productNameEl = document.querySelector('[data-testid="product-name"]');
+    if (productNameEl) {
+      for (const img of candidates) {
+        if (productNameEl.contains(img) || img.closest('[data-testid="product-info"], [data-testid="product-details"]')) {
+          productImg = img.src;
+          break;
+        }
+      }
+    }
+
+    if (!productImg && candidates.length > 0) {
+      productImg = candidates[0].src;
+    }
+
+    sendResponse({ url: productImg });
+    return true;
+  }
+});
