@@ -1,0 +1,213 @@
+let currentProduct = null;
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const saveBtn = document.getElementById("saveProductBtn");
+  const shareBtn = document.getElementById("shareBtn");
+  const savedToggle = document.getElementById("savedProductsToggle");
+  const savedSection = document.getElementById("savedProductsSection");
+  const priceCompareToggle = document.getElementById("priceCompareToggle");
+  const priceCompareSection = document.getElementById("priceComparison");
+  const dupeFinderToggle = document.getElementById("dupeToggle");
+  const dupeFinderSection = document.getElementById("dupeSection");
+  const reviewsToggle = document.getElementById("reviewsToggle");
+  const reviewsSection = document.getElementById("reviewsSection");
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.tabs.sendMessage(tabs[0].id, { action: "getProductInfo" }, (response) => {
+      if (!response) return;
+
+      const meccaReviewLink = document.getElementById("mecca-review-link");
+      const brandReviewLink = document.getElementById("brand-review-link");
+
+      meccaReviewLink.href = tabs[0].url + "#reviews";
+      const reviewQuery = encodeURIComponent(`${response.brand} ${response.title} reviews`);
+      brandReviewLink.href = `https://www.google.com/search?q=${reviewQuery}`;
+    });
+  });
+
+  const consciousFilterToggle = document.querySelector('.conscious-filters-toggle input[type="checkbox"]');
+  consciousFilterToggle?.addEventListener('change', (e) => {
+    const enabled = e.target.checked;
+    console.log('Conscious Filters toggled:', enabled);
+  });
+
+  function toggleSection(elementToShow, toggleElem) {
+    if (elementToShow.style.display === "none" || !elementToShow.style.display) {
+      elementToShow.style.display = "block";
+      toggleElem.querySelector(".arrow").style.transform = "rotate(90deg)";
+    } else {
+      elementToShow.style.display = "none";
+      toggleElem.querySelector(".arrow").style.transform = "rotate(0deg)";
+    }
+  }
+
+  priceCompareToggle.addEventListener("click", () => toggleSection(priceCompareSection, priceCompareToggle));
+  dupeFinderToggle.addEventListener("click", () => toggleSection(dupeFinderSection, dupeFinderToggle));
+  reviewsToggle.addEventListener("click", () => toggleSection(reviewsSection, reviewsToggle));
+  savedToggle.addEventListener("click", () => toggleSection(savedSection, savedToggle));
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) return;
+
+  chrome.tabs.sendMessage(tab.id, { action: "getProductInfo" }, (data) => {
+    if (!data) {
+      console.error("No product data received.");
+      return;
+    }
+
+    currentProduct = data;
+
+    document.getElementById("productTitle").innerText = data.title || "No title";
+    document.getElementById("productBrand").innerText = data.brand || "No brand";
+    document.getElementById("price").innerText = data.price || "No price";
+    document.getElementById("productRating").innerText = data.stars || "☆☆☆☆☆";
+
+    chrome.tabs.sendMessage(tab.id, { type: "GET_IMAGE" }, (resp) => {
+      const imgEl = document.getElementById("productImage");
+      imgEl.src = resp?.url || "placeholder.jpg";
+    });
+
+    const meccaReviewBtn = document.getElementById("meccaReviewBtn");
+    if (meccaReviewBtn) meccaReviewBtn.href = tab.url + "#reviews";
+
+    const brandReviewBtn = document.getElementById("brandReviewBtn");
+    if (brandReviewBtn && data.brand) {
+      const query = encodeURIComponent(`${data.brand} reviews`);
+      brandReviewBtn.href = `https://www.google.com/search?q=${query}`;
+    }
+
+    const priceList = document.getElementById("priceList");
+    priceList.innerHTML = `
+      <li class="price-card">
+        <div class="store-logo"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Mecca_logo.svg/2560px-Mecca_logo.svg.png" alt="Mecca" /></div>
+        <div class="price-info">
+          <span class="store-name">Mecca</span>
+          <span class="store-price">${data.price || 'N/A'}</span>
+          <a class="shop-now" href="${tab.url}" target="_blank">Shop Now</a>
+        </div>
+      </li>
+      <li class="price-card">
+        <div class="store-logo"><img src="https://upload.wikimedia.org/wikipedia/commons/1/19/Ulta_Logo.svg" alt="Ulta" /></div>
+        <div class="price-info">
+          <span class="store-name">Ulta</span>
+          <span class="store-price">Check Website</span>
+          <a class="shop-now" href="https://www.ulta.com/search?q=${encodeURIComponent(data.title)}" target="_blank">Shop Now</a>
+        </div>
+      </li>
+    `;
+
+    refreshSavedProducts();
+    chrome.storage.local.get(["savedProducts"], (res) => {
+      const saved = res.savedProducts || [];
+      const isSaved = saved.some(p => p.title === currentProduct.title);
+      updateSaveButtonState(saveBtn, isSaved);
+    });
+  });
+
+  saveBtn.addEventListener("click", () => {
+    if (!currentProduct) return;
+    chrome.storage.local.get(["savedProducts"], (res) => {
+      let saved = res.savedProducts || [];
+      const index = saved.findIndex(p => p.title === currentProduct.title);
+
+      if (index !== -1) {
+        saved.splice(index, 1);
+        chrome.storage.local.set({ savedProducts: saved }, () => {
+          updateSaveButtonState(saveBtn, false);
+          refreshSavedProducts();
+        });
+      } else {
+        saved.push(currentProduct);
+        chrome.storage.local.set({ savedProducts: saved }, () => {
+          updateSaveButtonState(saveBtn, true);
+          refreshSavedProducts();
+        });
+      }
+    });
+  });
+
+  shareBtn.addEventListener("click", () => {
+    if (!currentProduct?.url) return;
+    const originalText = shareBtn.textContent;
+    navigator.clipboard.writeText(currentProduct.url).then(() => {
+      shareBtn.textContent = "Copied!";
+      shareBtn.disabled = true;
+      setTimeout(() => {
+        shareBtn.textContent = originalText;
+        shareBtn.disabled = false;
+      }, 2000);
+    }).catch(() => {
+      shareBtn.textContent = "Failed to copy";
+      setTimeout(() => {
+        shareBtn.textContent = originalText;
+      }, 2000);
+    });
+  });
+
+  function refreshSavedProducts() {
+    chrome.storage.local.get(["savedProducts"], (res) => {
+      const saved = res.savedProducts || [];
+      const list = document.getElementById("savedList");
+      list.innerHTML = "";
+      if (saved.length === 0) {
+        list.innerHTML = "<li>No saved products.</li>";
+        return;
+      }
+      saved.forEach((prod, idx) => {
+        const li = document.createElement("li");
+        li.className = "saved-item";
+
+        const img = document.createElement("img");
+        img.className = "saved-img";
+        img.src = prod.image || "placeholder.jpg";
+        img.alt = prod.title || "Saved product";
+
+        const info = document.createElement("div");
+        info.className = "saved-info";
+
+        const title = document.createElement("a");
+        title.className = "saved-title";
+        title.textContent = prod.title || "Untitled";
+        title.href = prod.url || "#";
+        title.target = "_blank";
+        title.rel = "noopener noreferrer";
+
+        const price = document.createElement("div");
+        price.className = "saved-price";
+        price.textContent = prod.price || "No price";
+
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "saved-remove";
+        removeBtn.innerHTML = "&times;";
+        removeBtn.title = "Remove";
+        removeBtn.addEventListener("click", () => {
+          saved.splice(idx, 1);
+          chrome.storage.local.set({ savedProducts: saved }, () => {
+            refreshSavedProducts();
+            if (currentProduct && prod.title === currentProduct.title) {
+              updateSaveButtonState(saveBtn, false);
+            }
+          });
+        });
+
+        info.appendChild(title);
+        info.appendChild(price);
+        li.appendChild(img);
+        li.appendChild(info);
+        li.appendChild(removeBtn);
+        list.appendChild(li);
+      });
+    });
+  }
+
+  function updateSaveButtonState(button, isSaved) {
+    if (isSaved) {
+      button.textContent = "Saved ✔️";
+      button.classList.add("saved");
+    } else {
+      button.textContent = "Save to Beaura";
+      button.classList.remove("saved");
+    }
+    button.disabled = false;
+  }
+});
