@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1" />
+ <title>Beaura</title>
+ <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+ <div class="container">
+   <h1>Beaura</h1>
+
+   <div class="section overview-section">
+  <h2 class="section-title">Overview</h2>
+  <div class="overview-tags">
+    <span class="tag clean">Clean Beauty</span>
+  </div>
+</div>
+
+
+
+   <!-- Product Overview -->
+   <div class="product-overview">
+     <img id="productImage" class="product-img" src="" alt="Product Image" />
+     <div class="product-info">
+       <div id="productTitle" class="product-title">Loading title...</div>
+       <div id="productBrand" class="product-brand" style="font-size:13px; color:#6b7280; margin-bottom: 6px;">Loading brand...</div>
+       <div class="stats">
+         <span id="productRating" class="star-rating">☆☆☆☆☆</span>
+         <span id="price" style="margin-left:12px;">Loading price...</span>
+       </div>
+     </div>
+   </div>
+
+   <!-- Action Buttons -->
+   <div class="action-buttons">
+     <button id="saveProductBtn" class="button primary">Save to Beaura</button>
+     <button id="shareBtn" class="button secondary">Share</button>
+   </div>
+
+ 
+
+   <!-- Price Compare Toggle -->
+   <div class="menu-item" id="priceCompareToggle">
+     <div class="menu-text">
+       <p>Price Compare</p>
+       <p>Check prices across stores</p>
+     </div>
+     <span class="arrow">›</span>
+   </div>
+   <div id="priceComparison" class="menu-content" style="display: none;">
+     <ul id="priceList" class="price-list"></ul>
+   </div>
+
+  <div class="menu-item" id="reviewsToggle">
+  <div class="menu-text">
+    <p>Reviews</p>
+    <p>See reviews from across sites</p>
+  </div>
+  <span class="arrow">›</span>
+</div>
+
+<div id="reviewsSection" class="menu-content" style="display: none;">
+  <ul id="reviewsList" class="reviews-list">
+  </ul>
+
+  <div class="reviews-card">
+    <h4 class="reviews-heading">✨ Read Reviews</h4>
+
+    <a id="mecca-review-link" class="review-link-card" href="#" target="_blank" rel="noopener noreferrer">
+      <span>🛍️ View on Mecca</span>
+      <svg class="arrow-icon" viewBox="0 0 20 20" fill="none">
+        <path d="M7 5l5 5-5 5" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+
+    <button id="reviewBtn" class="button primary more-reviews-btn">Find More Reviews</button>
+  </div>
+</div>
+
+
+
+   
+   <!-- Dupe Finder Toggle -->
+   <div class="menu-item" id="dupeToggle">
+     <div class="menu-text">
+       <p>Dupe Finder</p>
+       <p>Discover similar items you’ll love</p>
+     </div>
+     <span class="arrow">&#8250;</span>
+   </div>
+   <div id="dupeSection" class="menu-content" style="display: none;">
+     <ul id="dupeList" class="price-list">
+       <li>Looking for similar products...</li>
+     </ul>
+   </div>
+
+   
+   <!-- Conscious Filters Toggle -->
+   <div class="menu-item conscious-filters-toggle">
+     <div class="menu-text">
+       <p>Clean Beauty </p>
+       <p>Instantly see if it’s clean beauty.</p>
+     </div>
+     <label class="toggle">
+       <input type="checkbox" checked />
+       <span class="slider"></span>
+     </label>
+   </div>
+   <!-- Saved Products Toggle -->
+   <div class="menu-item" id="savedProductsToggle">
+     <div class="menu-text">
+       <p>Saved Products</p>
+       <p>Access your favorites</p>
+     </div>
+     <span class="arrow">›</span>
+   </div>
+   <div id="savedProductsSection" class="menu-content" style="display: none;">
+     <ul id="savedList" class="saved-list"></ul>
+   </div>
+ </div>
+ <script src="popup.js"></script>
+</body>
+</html>
